@@ -5,6 +5,19 @@ bits 16
 org 0x7c00
 
 start:
+        cli
+
+    xor ax, ax
+    mov ds, ax
+    mov ss, ax
+    mov sp, 0x7c00
+
+    sti
+
+
+
+    xor ax, ax
+    mov ds, ax
     ;we cannot directly move the desired value inside es, so we use ax as
     ;a middleman.
 
@@ -18,6 +31,28 @@ start:
 
     ;our program itself lives at 7c00. huge gap.
     ;<low addresses>...<0x00007C00>....<huge gap>...<0x000B8000>....<gap>
+
+
+; BIOS disk read:
+; load sector 2 into physical address 0x1000
+
+xor ax, ax
+mov es, ax
+
+mov bx, 0x1000
+
+mov ah, 0x02        ; BIOS function: read sectors
+mov al, 1           ; read exactly one sector
+mov ch, 0           ; cylinder 0
+mov dh, 0           ; head 0
+mov cl, 2           ; sector 2
+
+; DL already contains the BIOS boot drive number
+
+int 0x13
+
+
+
 
 
     cli
@@ -73,10 +108,16 @@ protected_mode:
     mov esp, 0x70000
 
     mov dword [0xb8000], 0x0f320f33
+    call 0x1000
 
     hang32:
     hlt
     jmp hang32
+
+
+
+
+
 
 
 
