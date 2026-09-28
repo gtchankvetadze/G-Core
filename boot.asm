@@ -20,10 +20,69 @@ start:
     ;<low addresses>...<0x00007C00>....<huge gap>...<0x000B8000>....<gap>
 
 
-hang:
     cli
+
+    lgdt [gdt_descriptor]
+
+    mov eax, cr0 ;copy CR into eax, u cannot do math on cr0,so u copy the value.
+    or eax, 1 ;logical bitwise on the cr0 value with 1.
+    mov cr0, eax ;move updated value back to cr0. 0 to 1. Real to protected.
+
+    jmp 0x08:protected_mode
+
+
+; -----------------------------
+; Minimal GDT
+; -----------------------------
+
+gdt:
+    dq 0                    ; entry 0: required null entry
+
+    ; entry 1: 32-bit code segment
+    dw 0xffff
+    dw 0x0000
+    db 0x00
+    db 10011010b
+    db 11001111b
+    db 0x00
+
+    ; entry 2: 32-bit data segment
+    dw 0xffff
+    dw 0x0000
+    db 0x00
+    db 10010010b
+    db 11001111b
+    db 0x00
+
+gdt_end:
+
+gdt_descriptor:
+    dw gdt_end - gdt - 1
+    dd gdt
+
+
+bits 32
+
+protected_mode:
+    mov ax, 0x10
+
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+
+    mov esp, 0x70000
+
+    mov dword [0xb8000], 0x0f320f33
+
+    hang32:
     hlt
-    jmp hang
+    jmp hang32
+
+
+
+
+
+
 
 ;find the remaining space length and fill it with zeroes until the byte 510.
 ;512b is the standard(since 1981) sector size for legacy devices.
